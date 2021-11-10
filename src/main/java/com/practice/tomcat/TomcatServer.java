@@ -1,4 +1,7 @@
+package com.practice.tomcat;
+
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.practice.tomcat.sse.ServerSentEventServlet;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.connector.Connector;
@@ -15,13 +18,19 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class TomcatServer {
-    private static final int THREADS = 5;
+    private static final int THREADS = 10;
     private final Tomcat tomcat;
+    private Executor executor = null;
     private static final Logger LOG = LogManager.getLogger(TomcatServer.class);
 
     public TomcatServer() {
         tomcat = new Tomcat();
-
+        executor = new ThreadPoolExecutor(THREADS, THREADS,
+                0, TimeUnit.MILLISECONDS,
+                new SynchronousQueue<>(),
+                new ThreadFactoryBuilder()
+                        .setNameFormat("tomcat-%d")
+                        .setDaemon(true).build());
     }
 
     public void startServer() {
@@ -29,8 +38,9 @@ public class TomcatServer {
         host.setErrorReportValveClass(null);
 
         Context ctx = tomcat.addContext("", new File(".").getAbsolutePath());
-        ctx.addServletMappingDecoded("/*", "Echo");
-        Tomcat.addServlet(ctx, "Echo", new EchoServlet());
+        Tomcat.addServlet(ctx, "sse", new ServerSentEventServlet());
+
+        ctx.addServletMappingDecoded("/sse", "sse");
 
         Connector connector = new Connector(new Http11NioProtocol());
         connector.setProperty("address", "0.0.0.0");
@@ -41,12 +51,7 @@ public class TomcatServer {
         connector.setProperty("socket.soLingerOn", "false");
         connector.setEncodedSolidusHandling("passthrough");
 
-        final Executor executor = new ThreadPoolExecutor(THREADS, THREADS,
-                0, TimeUnit.MILLISECONDS,
-                new SynchronousQueue<>(),
-                new ThreadFactoryBuilder()
-                        .setNameFormat("tomcat-%d")
-                        .setDaemon(true).build());
+
         connector.getProtocolHandler().setExecutor(executor);
 
         tomcat.getService().addConnector(connector);
@@ -56,6 +61,11 @@ public class TomcatServer {
         } catch(LifecycleException exception) {
             throw new RuntimeException(exception);
         }
+    }
+
+    public void stopServer() throws LifecycleException {
+        tomcat.stop();
+        tomcat.destroy();
     }
 
     public static void main(String[] args) throws LifecycleException {

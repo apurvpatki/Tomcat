@@ -9,6 +9,6 @@
         <Root level="info">
             <AppenderRef ref="Console"/>
         </Root>
-        <Logger name="org.apache" level="TRACE"/>
+        <Logger name="org.apache" level="INFO"/>
     </Loggers>
 </Configuration>
