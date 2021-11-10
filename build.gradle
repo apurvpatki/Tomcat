@@ -1,12 +1,22 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 group 'org.example'
-version '1.0-SNAPSHOT'
+version '1.0.0'
 
 repositories {
     mavenCentral()
+}
+
+application {
+    mainClassName = "com.practice.tomcat.TomcatServer"
+    applicationDefaultJvmArgs = ['-Xms1024m', '-Xmx1024m',
+                                 '-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager',
+                                 '-Duser.timezone=UTC',
+                                 '-Dlog4j.configurationFile=log4j2.xml',
+    ]
 }
 
 dependencies {
@@ -15,10 +25,18 @@ dependencies {
     implementation 'org.apache.tomcat.embed:tomcat-embed-core:9.0.46'
     implementation 'org.apache.tomcat:tomcat-catalina:9.0.46'
     implementation 'org.apache.tomcat:tomcat-servlet-api:9.0.46'
-    compile 'org.apache.logging.log4j:log4j-core:2.14.1'
+    implementation("org.apache.logging.log4j:log4j-api:2.14.1")
+    implementation("org.apache.logging.log4j:log4j-jul:2.14.1")
+    implementation("org.apache.logging.log4j:log4j-core:2.14.1")
     implementation 'com.google.guava:guava:31.0.1-jre'
+    testImplementation 'com.launchdarkly:okhttp-eventsource:2.3.2'
 }
 
 test {
     useJUnitPlatform()
 }
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
